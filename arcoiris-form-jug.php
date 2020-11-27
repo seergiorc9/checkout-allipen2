@@ -14,8 +14,9 @@
  * Domain Path:       /languages
  */
 
- //Filtro que agrega campos a Billing
-//add_filter('woocommerce_billing_fields', 'custom_woocommerce_billing_fields');
+// Filtro que agrega campos a Billing
+add_filter('woocommerce_billing_fields', 'custom_woocommerce_billing_fields');
+
 
 //accion que agrega campos customizados
 
@@ -51,10 +52,7 @@ add_filter('woocommerce_checkout_get_value','__return_empty_string',10);
 function misha_view_order_and_thankyou_page( $order_id ){  
 
 	echo '<p><strong>'.__('¿Boleta o Factura? ').':</strong> ' . get_post_meta( $order_id, 'boleta-factura', true ) . '</p>';
-	if(strcmp( get_post_meta( $order_id, 'entrega', true ), 'Despacho') == 0){
 
-		echo '<p><strong>'.__('Forma de entrega ').':</strong> ' . get_post_meta( $order_id, 'entrega', true ) . '</p>';
-	}
 	//echo '<p><strong>'.__('Rut').':</strong> ' . get_post_meta( $order_id, 'rut', true ) . '</p>';
 
 	echo '<style>
@@ -73,23 +71,57 @@ function misha_view_order_and_thankyou_page( $order_id ){
 }
 
 
-/**
-*function custom_woocommerce_billing_fields($fields)
-*{
-*
- *   $fields['rut'] = array(
-*		'type' => 'text',
-*		'class' => array(
-*		'my-field-class form-row-wide'
-*		) ,
-*		'label' => __('RUT (Con guión, sin puntos)'),
-*		'placeholder' => __('Ej. 12345678-9'),
-*		'required' => true,
-*	);
-*
-*   return $fields;
-*}
-*/
+
+function custom_woocommerce_billing_fields($fields)
+{
+
+    $fields['entrega'] = array(
+	'type' => 'select',
+	'label' => __('Métodos de entrega') ,
+	'class' => array(
+	'form-row-first'
+	) ,
+	'options'	=> array( // options for <select> or <input type="radio" />
+		'Tienda'	=> 'Retiro en tienda', // 'value'=>'Name'
+		'Despacho'	=> 'Despacho a domicilio'
+		)
+	,
+	'required' => true
+) ;
+
+    $fields['retirar'] = array(
+	'type' => 'select',
+	'label' => __('Retiro en tienda') ,
+	'class' => array(
+	'form-row-last'
+	) ,
+	'options'	=> array( // options for <select> or <input type="radio" />
+		'Victoria'	=> 'Victoria', // 'value'=>'Name'
+		'Traiguen'	=> 'Traiguen'
+		)
+	,
+	'required' => true
+) ;
+
+$fields['fecha'] = array(
+	'type' => 'text',
+	'label' => __('Fecha de despacho') ,
+	'class' => array(
+	'form-row-last'
+	)
+	,
+	'required' => true
+) ;
+
+
+
+
+return $fields;
+   
+
+}
+
+
  
 function conditional_billing_form_ajax(){
 	
@@ -97,12 +129,11 @@ function conditional_billing_form_ajax(){
 	echo "<script>
 	jQuery( function( $ ) {
 
-		
 		geturl = window.location.href;
 		
 		if (geturl.endsWith('checkout/')) {
 		var boleta = $('input:radio[name=boleta-factura]');
-		var entrega = $('input:radio[name=entrega]');
+		var entrega = $('select[name=entrega]');
 
 		document.querySelector('#billing_address_1_field > label > span').innerHTML = '*'; // Elimina etiqueta opcional
 
@@ -125,12 +156,13 @@ function conditional_billing_form_ajax(){
 		entrega.change(function(){ //when the rating changes
 			var value=this.value;						
 			
-			if (value == 'Retiro-en-tienda'){
+			if (value == 'Tienda'){
 				$('#billing_address_1_field').addClass('esconder'); //show feedback_bad
 				$('#billing_address_1').prop('required',false);
 				$('#billing_address_1_field').removeClass('validate-required');
 				$('#billing_address_1_field > label > abbr').removeClass('required');
 				$('#billing_address_1_field').removeClass('woocommerce-validated');
+				
 				
 							
 			}
@@ -141,11 +173,26 @@ function conditional_billing_form_ajax(){
 				$('#billing_address_1_field > label > abbr').addClass('required');
 			}
 		});
+
+		
+		jQuery( function() {
+	
+			$('#fecha').datepicker();
+		});
+
 	}
 	});
 
 	
 	</script>";
+
+    echo "<script type='text/javascript>
+	jQuery( function() {
+
+		$('#fecha').datepicker();
+	});
+
+    </script>";
 
 	echo '<style>
 	.esconder, #customer_details > div > div.woocommerce-billing-fields > h3:nth-child(1){
@@ -163,8 +210,7 @@ function conditional_billing_form_ajax(){
 function my_custom_checkout_field_update_order_meta( $order_id ) {
     if ( ! empty( $_POST['boleta-factura'] || $_POST['entrega'] ) ) {
 		update_post_meta( $order_id, 'boleta-factura', sanitize_text_field( $_POST['boleta-factura'] ) );
-		update_post_meta( $order_id, 'entrega', sanitize_text_field( $_POST['entrega'] ) );
-		//update_post_meta( $order_id, 'rut', sanitize_text_field( $_POST['rut'] ) );
+		update_post_meta( $order_id, 'rut', sanitize_text_field( $_POST['rut'] ) );
 
 
 		update_post_meta( $order_id, 'nombre-empresa', sanitize_text_field( $_POST['nombre-empresa'] ) );
@@ -180,11 +226,8 @@ function my_custom_checkout_field_display_admin_order_meta($order){
 	echo sanitize_text_field($_POST['boleta-factura']);
 
 	echo '<p><strong>'.__('¿Boleta o Factura? ').':</strong> <br>' . get_post_meta( $order->id, 'boleta-factura', true ) . '</p>';
-	if(strcmp( get_post_meta( $order->id, 'entrega', true ), 'Despacho') == 0){
-
-		echo '<p><strong>'.__('Forma de entrega ').':</strong> <br>' . get_post_meta( $order->id, 'entrega', true ) . '</p>';
-	}
-	//echo '<p><strong>'.__('Rut ').':</strong> <br>' . get_post_meta( $order->id, 'rut', true ) . '</p>';
+	
+	echo '<p><strong>'.__('Rut ').':</strong> <br>' . get_post_meta( $order->id, 'rut', true ) . '</p>';
 
 	echo '<style>
 	#order_data > div.order_data_column_container > div:nth-child(2) > div.address > p:nth-child(1) > #text{
@@ -216,7 +259,7 @@ function customise_form($checkout)
 
 	$Total      = WC()->cart->cart_contents_total;
 
-	echo '<h3  class ="title-form esconder">Datos Facturación</h3>';
+	echo '<h3>DETALLES DE COMPRA</h3>';
 	
 	echo '<div class="woocommerce-billing-fields__field-wrapper">';
 	woocommerce_form_field('boleta-factura', array(
@@ -255,7 +298,7 @@ function customise_form($checkout)
 		'required' => true,
 	) , $checkout->get_value('nombre'));
 
-	woocommerce_form_field('Apellido', array(
+	woocommerce_form_field('apellido', array(
 		'type' => 'text',
 		'class' => array(
 	    'form-row-last'
@@ -267,45 +310,7 @@ function customise_form($checkout)
 	
 	
 	
-	if($Total > 15000){
-
-		
-		woocommerce_form_field('entrega', array(
-			'type' => 'select',
-			'label' => __('Métodos de entrega') ,
-			'class' => array(
-			'form-row-first'
-			) ,
-			'options'	=> array( // options for <select> or <input type="radio" />
-				'Retiro-en-tienda'	=> 'Retiro en tienda', // 'value'=>'Name'
-				'Despacho'	=> 'Despacho'
-				)
-			,
-			'required' => true
-		) , $checkout->get_value('entrega'));
-
-		woocommerce_form_field('retiro', array(
-			'type' => 'select',
-			'label' => __('Retiro en tienda') ,
-			'class' => array(
-			'form-row-last'
-			) ,
-			'options'	=> array( // options for <select> or <input type="radio" />
-				'Victoria'	=> 'Victoria', // 'value'=>'Name'
-				'Traiguen'	=> 'Traiguen'
-				)
-			,
-			'required' => true
-		) , $checkout->get_value('retio'));
-
-		
-
-}else{
 	
-	echo ' <div class="form-row form-row-last wooccm-field wooccm-field-wooccm13 wooccm-type-message" id="billing_wooccm13_field" data-priority="40"><div class="woocommerce-info "><b data-required="0">Compras inferiores a $15.000, solo retiro en tienda</b><br></div></div>';
-
-
-}
 
 echo '<div class="woocommerce_billing_factura esconder">';
 
@@ -315,13 +320,8 @@ echo '<div class="woocommerce_billing_factura esconder">';
 		) ,
 		'label' => __('Nombre de la empresa'),
 		'placeholder' => __('Ej. Aumenta360'),
-		'required' => true,
+		'required' => false,
 	) , $checkout->get_value('nombre-empresa'));
-
-	
-
-	echo '<h3>Datos Comprador</h3>';
-
 
 	echo '</div>';
 	  
@@ -329,7 +329,6 @@ echo '<div class="woocommerce_billing_factura esconder">';
 
 
 }
-
 
 
 function customise_checkout_field($checkout)
@@ -363,18 +362,16 @@ function custom_override_checkout_fields( $fields ) {
 		unset ($fields['billing']['billing_state'] );
 		unset ($fields['billing']['billing_first_name'] );
 		unset ($fields['billing']['billing_last_name'] );
-
-		
 		//form-row-wide
 
 		
 		$fields['billing']['billing_address_1']['label'] = 'Detalle Dirección ';
 		$fields['billing']['billing_address_1']['required'] = false;
-		$fields['billing']['billing_city']['label'] = 'Ciudad ';
+		$fields['billing']['billing_city']['label'] = 'Direccion de la calle ';
 		//$fields['billing']['billing_first_name']['label'] = 'Nombres ';
 		//$fields['billing']['billing_first_name']['placeholder'] = 'Ej. Daniel ';
 		//$fields['billing']['billing_last_name']['placeholder'] = 'Ej. Espinoza ';
-		$fields['billing']['billing_city']['placeholder'] = 'Ej. Victoria ';
+		$fields['billing']['billing_city']['placeholder'] = 'Ej. San Martin ';
 		$fields['billing']['billing_phone']['placeholder'] = 'Ej.989542873 ';
 		$fields['billing']['billing_email']['placeholder'] = 'Ej. contacto@aumenta360.cl ';
 		
@@ -383,10 +380,11 @@ function custom_override_checkout_fields( $fields ) {
 		$fields['billing']['billing_email']['class'][0] = 'form-row-last';
 		$fields['billing']['billing_address_1']['class'][2] = 'form-row-wide esconder';
 
-
-		//$fields['billing']['rut']['priority'] = 30; 
-		$fields['billing']['billing_address_1']['priority'] = 40;
-		$fields['billing']['billing_city']['priority'] = 50;
+		$fields['billing']['entrega']['priority'] = 40; 
+		$fields['billing']['retirar']['priority'] = 50; 
+		$fields['billing']['fecha']['priority'] = 55; 
+		$fields['billing']['billing_address_1']['priority'] = 60;
+		$fields['billing']['billing_city']['priority'] = 70;
 		
 	
 		//form-row-wide
