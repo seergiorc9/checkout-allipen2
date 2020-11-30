@@ -118,6 +118,7 @@ $fields['localidad'] = array(
 ) ;
 
 $fields['fecha'] = array(
+	'id' => 'fecha',
 	'type' => 'text',
 	'label' => __('Fecha de despacho') ,
 	'class' => array(
@@ -193,7 +194,18 @@ function conditional_billing_form_ajax(){
 
 		$(document).ready(function(){
 			$(function(){
-				$('fecha').datepicker();
+				$('#fecha').datepicker({
+					format: 'dd/mm/yyyy',
+                    weekStart: 0,
+                    startDate: '+2d',
+                    endDate: '+30d',
+                    clearBtn: true,
+                    language: 'es',
+                    multidate: false,
+                    daysOfWeekDisabled: '0,6',
+                    autoclose: true,
+                    todayHighlight: true
+				});
 			});
 		});
 
@@ -468,12 +480,13 @@ add_action('woocommerce_checkout_process','claserama_validate_select_field');
 //calentadio datepicker
 function js_calendarios(){
 	
-	wp_enqueue_style('calendario-css', get_template_directory_uri().'/css/jquery-ui.css', array(), '1.0');
+	wp_enqueue_style('calendario-css', get_template_directory_uri().'/plugins/checkout-allipen/css/jquery-ui.css', array(), '1.0');
 	wp_enqueue_style('calendario-css-2', get_template_directory_uri().'/css/jquery-ui.theme.css', array(), '1.0');
 	wp_enqueue_style('calendario-css-3', get_template_directory_uri().'/css/jquery-ui.structure.css', array(), '1.0');
 
+   //  console.log(get_template_directory_uri().'/js/jquery-ui.js');
 	wp_enqueue_script('calendario-js', get_template_directory_uri().'/js/jquery-ui.js', array('jquery'), '1.0');
-	//wp_enqueue_script('funciones-js', get_template_directory_uri().'/js/funciones.js', array('jquery'), '1.0');
+	
  }
 
  add_action('wp_enqueue_scripts', 'js_calendarios');
