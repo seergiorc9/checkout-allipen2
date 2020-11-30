@@ -103,6 +103,20 @@ function custom_woocommerce_billing_fields($fields)
 	'required' => true
 ) ;
 
+$fields['localidad'] = array(
+	'type' => 'select',
+	'label' => __('Envio a localidad') ,
+	'class' => array(
+	'form-row-last'
+	) ,
+	'options'	=> array( // options for <select> or <input type="radio" />
+		'Collipulli'	=> 'Collipulli', // 'value'=>'Name'
+		'Angol'	=> 'Angol'
+		)
+	,
+	'required' => true
+) ;
+
 $fields['fecha'] = array(
 	'type' => 'text',
 	'label' => __('Fecha de despacho') ,
@@ -112,9 +126,6 @@ $fields['fecha'] = array(
 	,
 	'required' => true
 ) ;
-
-
-
 
 return $fields;
    
@@ -144,12 +155,10 @@ function conditional_billing_form_ajax(){
 			
 			if (value == 'Boleta'){
 				$('.woocommerce_billing_factura').addClass('esconder'); //show feedback_bad
-				$('.title-form').addClass('esconder');
 				console.log('asd');					
 			}
 			else if (value == 'Factura'){
-				$('.woocommerce_billing_factura').removeClass('esconder');
-				$('.title-form').removeClass('esconder');	
+				$('.woocommerce_billing_factura').removeClass('esconder');		
 			}
 		});
 		
@@ -162,6 +171,10 @@ function conditional_billing_form_ajax(){
 				$('#billing_address_1_field').removeClass('validate-required');
 				$('#billing_address_1_field > label > abbr').removeClass('required');
 				$('#billing_address_1_field').removeClass('woocommerce-validated');
+				$('#retirar > label > Retiro en tienda').removeClass('requered');
+				$('#retirar').removeClass('esconder');
+				$('.woocommerce_billing_despacho').addClass('esconder'); //show feedback_bad
+				
 				
 				
 							
@@ -171,13 +184,17 @@ function conditional_billing_form_ajax(){
 				$('#billing_address_1').prop('required',true);
 				$('#billing_address_1_field').addClass('validate-required');
 				$('#billing_address_1_field > label > abbr').addClass('required');
+				$('#retirar > label > Retiro en tienda').addClass('requered');
+				$('#retirar').addClass('esconder');
+				$('.woocommerce_billing_despacho').removeClass('esconder');
+
 			}
 		});
 
-		
-		jQuery( function() {
-	
-			$('#fecha').datepicker();
+		$(document).ready(function(){
+			$(function(){
+				$('fecha').datepicker();
+			});
 		});
 
 	}
@@ -185,14 +202,6 @@ function conditional_billing_form_ajax(){
 
 	
 	</script>";
-
-    echo "<script type='text/javascript>
-	jQuery( function() {
-
-		$('#fecha').datepicker();
-	});
-
-    </script>";
 
 	echo '<style>
 	.esconder, #customer_details > div > div.woocommerce-billing-fields > h3:nth-child(1){
@@ -257,8 +266,6 @@ function my_custom_checkout_field_display_admin_order_meta($order){
 function customise_form($checkout)
 {
 
-	$Total      = WC()->cart->cart_contents_total;
-
 	echo '<h3>DETALLES DE COMPRA</h3>';
 	
 	echo '<div class="woocommerce-billing-fields__field-wrapper">';
@@ -308,9 +315,6 @@ function customise_form($checkout)
 		'required' => true,
 	) , $checkout->get_value('apellido'));
 	
-	
-	
-	
 
 echo '<div class="woocommerce_billing_factura esconder">';
 
@@ -324,7 +328,20 @@ echo '<div class="woocommerce_billing_factura esconder">';
 	) , $checkout->get_value('nombre-empresa'));
 
 	echo '</div>';
-	  
+
+	echo '<div class="woocommerce_billing_despacho esconder">';
+
+	woocommerce_form_field('nombre-empre', array(
+		'type' => 'text',
+		'class' => array(
+		) ,
+		'label' => __('Nombre de '),
+		'placeholder' => __('Ej. XD'),
+		'required' => false,
+	) , $checkout->get_value('nombre-empre'));
+
+	echo '</div>';
+
 	echo '</div>';
 
 
@@ -379,6 +396,7 @@ function custom_override_checkout_fields( $fields ) {
 		$fields['billing']['billing_phone']['class'][0] = 'form-row-first';
 		$fields['billing']['billing_email']['class'][0] = 'form-row-last';
 		$fields['billing']['billing_address_1']['class'][2] = 'form-row-wide esconder';
+	
 
 		$fields['billing']['entrega']['priority'] = 40; 
 		$fields['billing']['retirar']['priority'] = 50; 
@@ -445,3 +463,17 @@ function claserama_validate_select_field(){
 
 
 add_action('woocommerce_checkout_process','claserama_validate_select_field');
+
+
+//calentadio datepicker
+function js_calendarios(){
+	
+	wp_enqueue_style('calendario-css', get_template_directory_uri().'/css/jquery-ui.css', array(), '1.0');
+	wp_enqueue_style('calendario-css-2', get_template_directory_uri().'/css/jquery-ui.theme.css', array(), '1.0');
+	wp_enqueue_style('calendario-css-3', get_template_directory_uri().'/css/jquery-ui.structure.css', array(), '1.0');
+
+	wp_enqueue_script('calendario-js', get_template_directory_uri().'/js/jquery-ui.js', array('jquery'), '1.0');
+	//wp_enqueue_script('funciones-js', get_template_directory_uri().'/js/funciones.js', array('jquery'), '1.0');
+ }
+
+ add_action('wp_enqueue_scripts', 'js_calendarios');
