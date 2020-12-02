@@ -22,8 +22,6 @@ add_filter('woocommerce_billing_fields', 'custom_woocommerce_billing_fields');
 
 add_action('woocommerce_before_checkout_billing_form', 'customise_form');
 
-//woocommerce_after_checkout_billing_form
-
 //Acción que guarda la funcion nueva agregada
 add_action( 'woocommerce_checkout_update_order_meta', 'my_custom_checkout_field_update_order_meta' );
 
@@ -53,8 +51,6 @@ function misha_view_order_and_thankyou_page( $order_id ){
 
 	echo '<p><strong>'.__('¿Boleta o Factura? ').':</strong> ' . get_post_meta( $order_id, 'boleta-factura', true ) . '</p>';
 
-	//echo '<p><strong>'.__('Rut').':</strong> ' . get_post_meta( $order_id, 'rut', true ) . '</p>';
-
 	echo '<style>
 	#order_data > div.order_data_column_container > div:nth-child(2) > div.address > p:nth-child(1) > #text{
 		display: none;
@@ -69,8 +65,6 @@ function misha_view_order_and_thankyou_page( $order_id ){
 	
 }
 }
-
-
 
 function custom_woocommerce_billing_fields($fields)
 {
@@ -107,9 +101,9 @@ $fields['localidad'] = array(
 	'type' => 'select',
 	'label' => __('Envio a localidad') ,
 	'class' => array(
-	'form-row-last'
+	'form-row-first'
 	) ,
-	'options'	=> array( // options for <select> or <input type="radio" />
+	'options'	=> array( 
 		'Collipulli'	=> 'Collipulli', // 'value'=>'Name'
 		'Angol'	=> 'Angol'
 		)
@@ -155,8 +149,7 @@ function conditional_billing_form_ajax(){
 			var value=this.value;						
 			
 			if (value == 'Boleta'){
-				$('.woocommerce_billing_factura').addClass('esconder'); //show feedback_bad
-				console.log('asd');					
+				$('.woocommerce_billing_factura').addClass('esconder'); //show feedback_bad				
 			}
 			else if (value == 'Factura'){
 				$('.woocommerce_billing_factura').removeClass('esconder');		
@@ -195,7 +188,7 @@ function conditional_billing_form_ajax(){
 		$(document).ready(function(){
 			$(function(){
 				$('#fecha').datepicker({
-					format: 'dd/mm/yyyy',
+					format: 'dd-mm-yyyy',
                     weekStart: 0,
                     startDate: '+2d',
                     endDate: '+30d',
@@ -343,15 +336,6 @@ echo '<div class="woocommerce_billing_factura esconder">';
 
 	echo '<div class="woocommerce_billing_despacho esconder">';
 
-	woocommerce_form_field('nombre-empre', array(
-		'type' => 'text',
-		'class' => array(
-		) ,
-		'label' => __('Nombre de '),
-		'placeholder' => __('Ej. XD'),
-		'required' => false,
-	) , $checkout->get_value('nombre-empre'));
-
 	echo '</div>';
 
 	echo '</div>';
@@ -376,9 +360,6 @@ function customise_checkout_field($checkout)
 
   
 }
-
-// Hook in
-
 
 // Our hooked in function - $fields is passed via the filter!
 function custom_override_checkout_fields( $fields ) {
@@ -443,16 +424,9 @@ function claserama_validate_select_field(){
 		wc_add_notice( '<STRONG>¿Boleta o Factura?</STRONG> es un campo requerido', 'error' );
 	}
 
-	if ( empty( $_POST['entrega'] )  && $Total > 15000){
-		wc_add_notice( '<STRONG>Forma de entrega</STRONG> es un campo requerido', 'error' );
-	}
-
 	if( strlen($_POST['rut']) < 5  ){
 		wc_add_notice( '<STRONG>Facturación RUT</STRONG> No tiene la longitud necesaria', 'error' );
 	}
-
-
-	
 
 	//Validaciones hechas a campos de facturación
 
@@ -468,11 +442,7 @@ function claserama_validate_select_field(){
 		wc_add_notice( '<STRONG>Detalle Dirección </STRONG>  es un campo requerido', 'error' );
 	}
 	
-		
-
 }
-
-
 
 add_action('woocommerce_checkout_process','claserama_validate_select_field');
 
@@ -480,7 +450,7 @@ add_action('woocommerce_checkout_process','claserama_validate_select_field');
 //calentadio datepicker
 function js_calendarios(){
 	
-	wp_enqueue_style('calendario-css', get_template_directory_uri().'/plugins/checkout-allipen/css/jquery-ui.css', array(), '1.0');
+	wp_enqueue_style('calendario-css', get_template_directory_uri().'/css/jquery-ui.css', array(), '1.0');
 	wp_enqueue_style('calendario-css-2', get_template_directory_uri().'/css/jquery-ui.theme.css', array(), '1.0');
 	wp_enqueue_style('calendario-css-3', get_template_directory_uri().'/css/jquery-ui.structure.css', array(), '1.0');
 
@@ -490,3 +460,40 @@ function js_calendarios(){
  }
 
  add_action('wp_enqueue_scripts', 'js_calendarios');
+
+
+//Envio a localidad
+ function prefix_add_discount_line( $cart ) {
+
+	$discount = $cart->subtotal * 0.1;
+  
+	$cart->add_fee( __( 'Descuento', 'yourtext-domain' ) , -$discount );
+ //print_r($cart);
+  
+  }
+
+
+ // add_action( 'woocommerce_cart_calculate_fees', 'prefix_add_discount_line' );
+
+
+
+
+
+  // Add tax for Swiss country
+add_action( 'woocommerce_cart_calculate_fees','custom_tax_surcharge_for_swiss', 10, 1 );
+
+function custom_tax_surcharge_for_swiss( $cart ) {
+    if ( is_admin() && ! defined('DOING_AJAX') ) return;
+
+    // Only for Swiss country (if not we exit)
+    if ( 'Angol' != WC()->customer->get_shipping_country() ) return;
+
+    $percent = 8;
+    # $taxes = array_sum( $cart->taxes ); // <=== This is not used in your function
+
+    // Calculation
+    $surcharge = ( $cart->cart_contents_total + $cart->shipping_total ) * $percent / 100;
+
+    // Add the fee (tax third argument disabled: false)
+    $cart->add_fee( __( 'TAX', 'woocommerce')." ($percent%)", $surcharge, false );
+}
